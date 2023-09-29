@@ -1,4 +1,12 @@
-CFLAGS=-std=c11 -g -static
+BASE_FLAGS		=	-std=c11 -g
+RELEASE_FLAGS	=	-static
+DEBUG_FLAGS		=	-fsanitize=address
+
+ifdef DEBUG
+	CFLAGS = $(BASE_FLAGS) $(DEBUG_FLAGS)
+else
+	CFLAGS = $(BASE_FLAGS) $(RELEASE_FLAGS)
+endif
 
 9cc: 9cc.c
 
