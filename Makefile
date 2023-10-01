@@ -1,6 +1,9 @@
 BASE_FLAGS		=	-std=c11 -g
+ifneq ($(shell uname), Darwin)
 RELEASE_FLAGS	=	-static
+endif
 DEBUG_FLAGS		=	-fsanitize=address
+CC				=	gcc
 
 ifdef DEBUG
 	CFLAGS = $(BASE_FLAGS) $(DEBUG_FLAGS)
