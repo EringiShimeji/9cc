@@ -4,6 +4,8 @@ RELEASE_FLAGS	=	-static
 endif
 DEBUG_FLAGS		=	-fsanitize=address
 CC				=	gcc
+SRCS			=	$(wildcard *.c)
+OBJS			=	$(SRCS:.c=.o)
 
 ifdef DEBUG
 	CFLAGS = $(BASE_FLAGS) $(DEBUG_FLAGS)
@@ -11,7 +13,10 @@ else
 	CFLAGS = $(BASE_FLAGS) $(RELEASE_FLAGS)
 endif
 
-9cc: 9cc.c
+9cc: $(OBJS)
+		$(CC) -o 9cc $(OBJS) $(LDFLAGS)
+
+$(OBJS): 9cc.h
 
 test: 9cc
 		./test.sh
