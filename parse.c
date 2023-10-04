@@ -65,8 +65,11 @@ Token *tokenize() {
 			continue;
 		}
 
-		if ('a' <= *p && *p <= 'z') {
-			cur = new_token(TK_IDENT, cur, p++, 1);
+		if (isalpha(*p)) {
+			char *q = p;
+			while (isalnum(*p) || *p == '_')
+				p++;
+			cur = new_token(TK_IDENT, cur, q, p - q);
 			continue;
 		}
 
@@ -230,6 +233,14 @@ Node *unary() {
 	return primary();
 }
 
+LVar *find_lvar(Token *tok) {
+	for (LVar *var = locals; var; var = var->next) {
+		if (tok->len == var->len && !memcmp(tok->str, var->name, var->len))
+			return var;
+	}
+	return NULL;
+}
+
 Node *primary() {
 	Node *node;
 
@@ -241,8 +252,22 @@ Node *primary() {
 
 	Token *tok = consume_ident();
 	if (tok) {
+		LVar *lvar = find_lvar(tok);
 		Node *node = new_node(ND_LVAR, NULL, NULL);
-		node->offset = (tok->str[0] - 'a' + 1) * 8;
+
+		if (lvar) {
+			node->offset = lvar->offset;
+		} else {
+			lvar = calloc(1, sizeof(LVar));
+			lvar->next = locals;
+			lvar->name = tok->str;
+			lvar->len = tok->len;
+			if (locals)
+				lvar->offset = locals->offset + 8;
+			node->offset = lvar->offset;
+			locals = lvar;
+		}
+
 		return node;
 	}
 

@@ -14,9 +14,9 @@ else
 endif
 
 9cc: $(OBJS)
-		$(CC) -o 9cc $(OBJS) $(LDFLAGS)
+		$(CC) -o 9cc $(OBJS) $(LDFLAGS) $(CFLAGS)
 
-$(OBJS): 9cc.h
+$(OBJS): 9cc.h asm.h
 
 test: 9cc
 		./test.sh

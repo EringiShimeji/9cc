@@ -1,5 +1,9 @@
 #include "9cc.h"
 
+const char *__asan_default_options() {
+	return "detect_leaks=0";
+}
+
 int main(int argc, char **argv) {
 	if (argc != 2) {
 		fprintf(stderr, "引数の個数が正しくありません\n");
@@ -16,7 +20,7 @@ int main(int argc, char **argv) {
 
 	PUSH("rbp");
 	MOV("rbp", "rsp");
-	ASM("sub", "rsp", "208");
+	ASM("sub", "rsp", "%d", locals ? locals->offset : 0);
 
 	for (int i = 0; code[i]; i++) {
 		gen(code[i]);
