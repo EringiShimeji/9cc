@@ -5,50 +5,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef __APPLE__
-#define _9CC_MAIN "_main"
-#define _9CC_MOVZB "movzx"
-#else
-#define _9CC_MAIN "main"
-#define _9CC_MOVZB "movzb"
-#endif
-
-#define _9CC_ASM_UNARY_OP_FORMAT(op, format, value) \
-	printf(                                         \
-		"  "                                        \
-		"" op " " format "\n",                      \
-		value)
-#define _9CC_ASM_NULLARY_OP(op) \
-	printf(                     \
-		"  "                    \
-		"" op "\n")
-#define _9CC_ASM_UNARY_OP(op, operand) \
-	printf(                            \
-		"  "                           \
-		"" op " " operand "\n")
-#define _9CC_ASM_BINARY_OP(op, lhs, rhs) \
-	printf(                              \
-		"  "                             \
-		"" op " " lhs ", " rhs "\n")
-#define _9CC_VA_ASM(_1, _2, _3, NAME, ...) NAME
-#define ASM(...)                                                    \
-	_9CC_VA_ASM(__VA_ARGS__, _9CC_ASM_BINARY_OP, _9CC_ASM_UNARY_OP, \
-				_9CC_ASM_NULLARY_OP)                                \
-	(__VA_ARGS__)
-#define MOVZB(dst, src) ASM(_9CC_MOVZB, dst, src)
-#define CMP(lhs, rhs) ASM("cmp", lhs, rhs)
-#define _9CC_PUSH_FORMAT(format, value) \
-	_9CC_ASM_UNARY_OP_FORMAT("push", format, value)
-#define _9CC_PUSH_REG(reg) ASM("push", reg)
-#define _9CC_VA_PUSH(_1, _2, NAME, ...) NAME
-#define PUSH(...) \
-	_9CC_VA_PUSH(__VA_ARGS__, _9CC_PUSH_FORMAT, _9CC_PUSH_REG)(__VA_ARGS__)
-#define POP(reg) ASM("pop", reg)
-#define RET() ASM("ret")
+#include "asm.h"
 
 // トークンの種類
 typedef enum {
 	TK_RESERVED,
+	TK_IDENT,
 	TK_NUM,
 	TK_EOF,
 } TokenKind;
@@ -68,11 +30,13 @@ typedef enum {
 	ND_SUB,
 	ND_MUL,
 	ND_DIV,
-	ND_NUM,
 	ND_EQ,
 	ND_NE,
 	ND_LE,
 	ND_LT,
+	ND_ASSIGN,
+	ND_LVAR,
+	ND_NUM,
 } NodeKind;
 
 typedef struct Node Node;
@@ -82,11 +46,14 @@ struct Node {
 	Node	*lhs;
 	Node	*rhs;
 	int		 val;
+	int		 offset;
 };
 
 Token *token;
 char  *user_input;
+Node  *code[100];
 
 Token *tokenize(void);
-Node  *parse();
+void   program();
+void   error_at(char *loc, char *fmt, ...);
 void   gen(Node *node);

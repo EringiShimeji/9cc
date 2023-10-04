@@ -8,15 +8,23 @@ int main(int argc, char **argv) {
 
 	user_input = argv[1];
 	token = tokenize();
-
-	Node *node = parse();
+	program();
 
 	printf(".intel_syntax noprefix\n");
 	printf(".globl %s\n", _9CC_MAIN);
 	printf("%s:\n", _9CC_MAIN);
 
-	gen(node);
-	POP("rax");
+	PUSH("rbp");
+	MOV("rbp", "rsp");
+	ASM("sub", "rsp", "208");
+
+	for (int i = 0; code[i]; i++) {
+		gen(code[i]);
+
+		POP("rax");
+	}
+	MOV("rsp", "rbp");
+	POP("rbp");
 	RET();
 	return 0;
 }

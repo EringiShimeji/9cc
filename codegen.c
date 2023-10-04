@@ -1,9 +1,32 @@
 #include "9cc.h"
 
+void gen_lval(Node *node) {
+	if (node->kind != ND_LVAR)
+		error_at(user_input, "代入の左辺値が変数ではありません");
+	MOV("rax", "rbp");
+	ASM("sub", "rax", "%d", node->offset);
+	PUSH("rax");
+}
+
 void gen(Node *node) {
-	if (node->kind == ND_NUM) {
-		PUSH("%d", node->val);
-		return;
+	switch (node->kind) {
+		case ND_NUM:
+			PUSH("%d", node->val);
+			return;
+		case ND_LVAR:
+			gen_lval(node);
+			POP("rax");
+			MOV("rax", "[rax]");
+			PUSH("rax");
+			return;
+		case ND_ASSIGN:
+			gen_lval(node->lhs);
+			gen(node->rhs);
+			POP("rdi");
+			POP("rax");
+			MOV("[rax]", "rdi");
+			PUSH("rdi");
+			return;
 	}
 
 	gen(node->lhs);
