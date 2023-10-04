@@ -27,6 +27,13 @@ void gen(Node *node) {
 			MOV("[rax]", "rdi");
 			PUSH("rdi");
 			return;
+		case ND_RETURN:
+			gen(node->lhs);
+			POP("rax");
+			MOV("rsp", "rbp");
+			POP("rbp");
+			RET();
+			return;
 	}
 
 	gen(node->lhs);

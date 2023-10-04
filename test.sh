@@ -45,5 +45,13 @@ assert 0 '1>=2;'
 assert 10 'a=10;'
 assert 20 'a=15; b=5; a+b;'
 assert 6 'foo = 1; bar = 2 + 3; foo + bar;'
+assert 1 '_ = 1; _;'
+assert 1 '_123 = 1; _123;'
+assert 1 '_123abc = 1; _123abc;'
+assert 1 'ABC123 = 1; ABC123;'
+assert 1 'return 1;'
+assert 1 'return 1; return 2;'
+assert 2 'a = 2; return a;'
+
 
 echo OK

@@ -28,6 +28,10 @@ bool startswith(char *p, char *q) {
 	return memcmp(p, q, strlen(q)) == 0;
 }
 
+bool is_alnum(char c) {
+	return (isalnum(c) || c == '_');
+}
+
 Token *tokenize() {
 	Token  head;
 	Token *cur;
@@ -41,11 +45,17 @@ Token *tokenize() {
 			p++;
 			continue;
 		}
+		if (startswith(p, "return") && !is_alnum(p[6])) {
+			cur = new_token(TK_RETURN, cur, p, 6);
+			p += 6;
+			continue;
+		}
 
 		if (startswith(p, "==") || startswith(p, "!=") || startswith(p, ">=") ||
 			startswith(p, "<=")) {
 			cur = new_token(TK_RESERVED, cur, p, 2);
 			p += 2;
+			continue;
 		}
 
 		if (startswith(p, "+") || startswith(p, "-") || startswith(p, "*") ||
@@ -65,9 +75,9 @@ Token *tokenize() {
 			continue;
 		}
 
-		if (isalpha(*p)) {
+		if (isalpha(*p) || *p == '_') {
 			char *q = p;
-			while (isalnum(*p) || *p == '_')
+			while (is_alnum(*p))
 				p++;
 			cur = new_token(TK_IDENT, cur, q, p - q);
 			continue;
@@ -79,7 +89,14 @@ Token *tokenize() {
 	return head.next;
 }
 
-bool consume(char *op) {
+bool consume(TokenKind kind) {
+	if (token->kind != kind)
+		return false;
+	token = token->next;
+	return true;
+}
+
+bool consume_op(char *op) {
 	if (token->kind != TK_RESERVED || strlen(op) != token->len ||
 		memcmp(token->str, op, token->len))
 		return false;
@@ -149,7 +166,13 @@ void program() {
 }
 
 Node *stmt() {
-	Node *node = expr();
+	Node *node;
+
+	if (consume(TK_RETURN)) {
+		node = new_node(ND_RETURN, expr(), NULL);
+	} else {
+		node = expr();
+	}
 
 	expect(";");
 	return node;
@@ -162,7 +185,7 @@ Node *expr() {
 Node *assign() {
 	Node *node = equality();
 
-	while (consume("="))
+	while (consume_op("="))
 		node = new_node(ND_ASSIGN, node, equality());
 	return node;
 }
@@ -171,9 +194,9 @@ Node *equality() {
 	Node *node = relational();
 
 	for (;;) {
-		if (consume("=="))
+		if (consume_op("=="))
 			node = new_node(ND_EQ, node, relational());
-		else if (consume("!="))
+		else if (consume_op("!="))
 			node = new_node(ND_NE, node, relational());
 		else
 			return node;
@@ -184,13 +207,13 @@ Node *relational() {
 	Node *node = add();
 
 	for (;;) {
-		if (consume("<="))
+		if (consume_op("<="))
 			node = new_node(ND_LE, node, add());
-		else if (consume(">="))
+		else if (consume_op(">="))
 			node = new_node(ND_LE, add(), node);
-		else if (consume("<"))
+		else if (consume_op("<"))
 			node = new_node(ND_LT, node, add());
-		else if (consume(">"))
+		else if (consume_op(">"))
 			node = new_node(ND_LT, add(), node);
 		else
 			return node;
@@ -202,9 +225,9 @@ Node *add() {
 
 	node = mul();
 	for (;;) {
-		if (consume("+"))
+		if (consume_op("+"))
 			node = new_node(ND_ADD, node, mul());
-		else if (consume("-"))
+		else if (consume_op("-"))
 			node = new_node(ND_SUB, node, mul());
 		else
 			return node;
@@ -216,9 +239,9 @@ Node *mul() {
 
 	node = unary();
 	for (;;) {
-		if (consume("*"))
+		if (consume_op("*"))
 			node = new_node(ND_MUL, node, unary());
-		else if (consume("/"))
+		else if (consume_op("/"))
 			node = new_node(ND_DIV, node, unary());
 		else
 			return node;
@@ -226,9 +249,9 @@ Node *mul() {
 }
 
 Node *unary() {
-	if (consume("+"))
+	if (consume_op("+"))
 		return primary();
-	if (consume("-"))
+	if (consume_op("-"))
 		return new_node(ND_SUB, new_node_num(0), primary());
 	return primary();
 }
@@ -244,7 +267,7 @@ LVar *find_lvar(Token *tok) {
 Node *primary() {
 	Node *node;
 
-	if (consume("(")) {
+	if (consume_op("(")) {
 		node = expr();
 		expect(")");
 		return node;
