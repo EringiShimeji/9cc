@@ -14,7 +14,6 @@ void gen_lval(Node *node) {
 		error_at(user_input, "代入の左辺値が変数ではありません");
 	println("  mov rax, rbp");
 	println("  sub rax, %d", node->offset);
-	println("  push rax");
 }
 
 static int label_id;
@@ -27,25 +26,23 @@ void gen(Node *node) {
 
 	switch (node->kind) {
 		case ND_NUM:
-			println("  push %d", node->val);
+			println("  mov rax, %d", node->val);
 			return;
 		case ND_LVAR:
 			gen_lval(node);
-			println("  pop rax");
 			println("  mov rax, [rax]");
-			println("  push rax");
 			return;
 		case ND_ASSIGN:
 			gen_lval(node->lhs);
+			println("  push rax");
 			gen(node->rhs);
-			println("  pop rdi");
+			println("  mov rdi, rax");
 			println("  pop rax");
 			println("  mov [rax], rdi");
-			println("  push rdi");
+			println("  mov rax, rdi");
 			return;
 		case ND_RETURN:
 			gen(node->lhs);
-			println("  pop rax");
 			println("  mov rsp, rbp");
 			println("  pop rbp");
 			println("  ret");
@@ -54,7 +51,6 @@ void gen(Node *node) {
 			cur_label = label_id++;
 
 			gen(node->condition);
-			println("  pop rax");
 			println("  cmp rax, 0");
 			if (node->rhs) {
 				println("  je .Lelse%.3d", cur_label);
@@ -74,7 +70,6 @@ void gen(Node *node) {
 
 			println(".Lbegin%.3d:", cur_label);
 			gen(node->condition);
-			println("  pop rax");
 			println("  cmp rax, 0");
 			println("  je .Lend%.3d", cur_label);
 			gen(node->lhs);
@@ -88,7 +83,6 @@ void gen(Node *node) {
 			println(".Lbegin%.3d:", cur_label);
 			if (node->condition) {
 				gen(node->condition);
-				println("  pop rax");
 				println("  cmp rax, 0");
 				println("  je .Lend%.3d", cur_label);
 			}
@@ -98,21 +92,17 @@ void gen(Node *node) {
 			println(".Lend%.3d:", cur_label);
 			return;
 		case ND_BLOCK: {
-			Node *cur = node->next;
-
-			while (cur) {
+			for (Node *cur = node->next; cur; cur = cur->next) {
 				gen(cur);
-				cur = cur->next;
 			}
-
 			return;
 		}
 	}
 
 	gen(node->lhs);
+	println("  push rax");
 	gen(node->rhs);
-
-	println("  pop rdi");
+	println("  mov rdi, rax");
 	println("  pop rax");
 
 	switch (node->kind) {
@@ -150,6 +140,4 @@ void gen(Node *node) {
 			println("  " MOVZB " rax, al");
 			break;
 	}
-
-	println("  push rax");
 }

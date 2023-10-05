@@ -24,8 +24,6 @@ int main(int argc, char **argv) {
 
 	for (int i = 0; code[i]; i++) {
 		gen(code[i]);
-
-		println("  pop rax");
 	}
 	println("  mov rsp, rbp");
 	println("  pop rbp");
