@@ -1,5 +1,10 @@
 #include "9cc.h"
 
+static int		   label_id;
+static const char *arg_regs[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+static const char *caller_saved_regs[] = {"rcx", "rdx", "rsi", "rdi", "r8",
+										  "r9",	 "r10", "r11", NULL};
+
 void println(char *fmt, ...) {
 	va_list ap;
 
@@ -15,8 +20,6 @@ void gen_lval(Node *node) {
 	println("  mov rax, rbp");
 	println("  sub rax, %d", node->offset);
 }
-
-static int label_id;
 
 void gen(Node *node) {
 	if (node == NULL)
@@ -95,6 +98,26 @@ void gen(Node *node) {
 			for (Node *cur = node->next; cur; cur = cur->next) {
 				gen(cur);
 			}
+			return;
+		}
+		case ND_CALL: {
+			int csi = 0;
+			for (; caller_saved_regs[csi]; csi++) {
+				println("  push %s", caller_saved_regs[csi]);
+			}
+
+			int i = 0;
+			for (Node *arg = node->args; arg; arg = arg->next) {
+				gen(arg);
+				println("  mov %s, rax", arg_regs[i++]);
+			}
+
+			println("  call %.*s", node->len, node->func_name);
+
+			while (--csi >= 0) {
+				println("  pop %s", caller_saved_regs[csi]);
+			}
+
 			return;
 		}
 	}

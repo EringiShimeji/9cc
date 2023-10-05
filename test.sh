@@ -4,7 +4,7 @@ assert() {
   input="$2"
 
   ./9cc "$input" > tmp.s
-  cc -o tmp tmp.s
+  cc -o tmp tmp.s test/*.o
   ./tmp
   actual="$?"
 
@@ -74,5 +74,10 @@ assert 2 'for (;;) { i = i + 1; if (i == 2) return i; }'
 assert 5 'for (;;) { i = i + 1; if (i == 5) return i; }'
 assert 10 'for (;;) { i = i + 1; if (i == 10) return i; }'
 assert 10 'while (1) { i = i + 1; if (i == 10) return i; }'
+assert 2 'exit(2);'
+assert 128 'exit(128);'
+assert 5 'add(2, 3);'
+assert 5 'return add(2, 3);'
+assert 9 'return add(2, 3) + 4;'
 
 echo OK

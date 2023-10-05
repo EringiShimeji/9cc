@@ -90,7 +90,8 @@ Token *tokenize() {
 		if (startswith(p, "+") || startswith(p, "-") || startswith(p, "*") ||
 			startswith(p, "/") || startswith(p, "(") || startswith(p, ")") ||
 			startswith(p, "<") || startswith(p, ">") || startswith(p, ";") ||
-			startswith(p, "=") || startswith(p, "{") || startswith(p, "}")) {
+			startswith(p, "=") || startswith(p, "{") || startswith(p, "}") ||
+			startswith(p, ",")) {
 			cur = new_token(TK_RESERVED, cur, p++, 1);
 			continue;
 		}
@@ -359,6 +360,22 @@ Node *primary() {
 
 	Token *tok = consume_ident();
 	if (tok) {
+		if (consume_op("(")) {
+			node = new_node(ND_CALL, NULL, NULL);
+			node->func_name = tok->str;
+			node->len = tok->len;
+
+			if (consume_op(")"))
+				return NULL;
+
+			Node *last_arg = expr();
+			node->args = last_arg;
+			for (; !consume_op(")"); last_arg = last_arg->next) {
+				expect(",");
+				last_arg->next = expr();
+			}
+			return node;
+		}
 		LVar *lvar = find_lvar(tok);
 		Node *node = new_node(ND_LVAR, NULL, NULL);
 
