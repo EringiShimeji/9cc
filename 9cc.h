@@ -5,7 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "asm.h"
+#ifdef __APPLE__
+#define MAIN "_main"
+#define MOVZB "movzx"
+#else
+#define MAIN "main"
+#define MOVZB "movzb"
+#endif
 
 // トークンの種類
 typedef enum {
@@ -14,6 +20,10 @@ typedef enum {
 	TK_NUM,
 	TK_EOF,
 	TK_RETURN,
+	TK_IF,
+	TK_ELSE,
+	TK_WHILE,
+	TK_FOR,
 } TokenKind;
 
 typedef struct Token Token;
@@ -50,6 +60,10 @@ typedef enum {
 	ND_LVAR,
 	ND_NUM,
 	ND_RETURN,
+	ND_IF,
+	ND_WHILE,
+	ND_FOR,
+	ND_BLOCK
 } NodeKind;
 
 typedef struct Node Node;
@@ -60,13 +74,19 @@ struct Node {
 	Node	*rhs;
 	int		 val;
 	int		 offset;
+	Node	*init;
+	Node	*condition;
+	Node	*update;
+	Node	*next;
 };
 
 Token *token;
 char  *user_input;
 Node  *code[100];
 
+void   debug_token(const char *label);
 Token *tokenize(void);
 void   program();
 void   error_at(char *loc, char *fmt, ...);
 void   gen(Node *node);
+void   println(char *fmt, ...);

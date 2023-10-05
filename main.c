@@ -14,21 +14,21 @@ int main(int argc, char **argv) {
 	token = tokenize();
 	program();
 
-	printf(".intel_syntax noprefix\n");
-	printf(".globl %s\n", _9CC_MAIN);
-	printf("%s:\n", _9CC_MAIN);
+	println(".intel_syntax noprefix");
+	println(".globl %s", MAIN);
+	println("%s:", MAIN);
 
-	PUSH("rbp");
-	MOV("rbp", "rsp");
-	ASM("sub", "rsp", "%d", locals ? locals->offset : 0);
+	println("  push rbp");
+	println("  mov rbp, rsp");
+	println("  sub rsp, %d", locals ? locals->offset : 0);
 
 	for (int i = 0; code[i]; i++) {
 		gen(code[i]);
 
-		POP("rax");
+		println("  pop rax");
 	}
-	MOV("rsp", "rbp");
-	POP("rbp");
-	RET();
+	println("  mov rsp, rbp");
+	println("  pop rbp");
+	println("  ret");
 	return 0;
 }

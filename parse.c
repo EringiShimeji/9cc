@@ -32,6 +32,10 @@ bool is_alnum(char c) {
 	return (isalnum(c) || c == '_');
 }
 
+bool is_keyword(char *p, char *q) {
+	return startswith(p, q) && !is_alnum(p[strlen(q)]);
+}
+
 Token *tokenize() {
 	Token  head;
 	Token *cur;
@@ -45,9 +49,34 @@ Token *tokenize() {
 			p++;
 			continue;
 		}
-		if (startswith(p, "return") && !is_alnum(p[6])) {
+
+		if (is_keyword(p, "return")) {
 			cur = new_token(TK_RETURN, cur, p, 6);
 			p += 6;
+			continue;
+		}
+
+		if (is_keyword(p, "if")) {
+			cur = new_token(TK_IF, cur, p, 2);
+			p += 2;
+			continue;
+		}
+
+		if (is_keyword(p, "else")) {
+			cur = new_token(TK_ELSE, cur, p, 4);
+			p += 4;
+			continue;
+		}
+
+		if (is_keyword(p, "while")) {
+			cur = new_token(TK_WHILE, cur, p, 5);
+			p += 5;
+			continue;
+		}
+
+		if (is_keyword(p, "for")) {
+			cur = new_token(TK_FOR, cur, p, 3);
+			p += 3;
 			continue;
 		}
 
@@ -61,7 +90,7 @@ Token *tokenize() {
 		if (startswith(p, "+") || startswith(p, "-") || startswith(p, "*") ||
 			startswith(p, "/") || startswith(p, "(") || startswith(p, ")") ||
 			startswith(p, "<") || startswith(p, ">") || startswith(p, ";") ||
-			startswith(p, "=")) {
+			startswith(p, "=") || startswith(p, "{") || startswith(p, "}")) {
 			cur = new_token(TK_RESERVED, cur, p++, 1);
 			continue;
 		}
@@ -166,15 +195,70 @@ void program() {
 }
 
 Node *stmt() {
-	Node *node;
+	Node *node = NULL;
 
 	if (consume(TK_RETURN)) {
 		node = new_node(ND_RETURN, expr(), NULL);
-	} else {
+		expect(";");
+	} else if (consume(TK_IF)) {
+		node = new_node(ND_IF, NULL, NULL);
+
+		expect("(");
+
+		node->condition = expr();
+
+		expect(")");
+
+		node->lhs = stmt();
+
+		if (consume(TK_ELSE))
+			node->rhs = stmt();
+	} else if (consume(TK_WHILE)) {
+		node = new_node(ND_WHILE, NULL, NULL);
+
+		expect("(");
+
+		node->condition = expr();
+
+		expect(")");
+
+		node->lhs = stmt();
+	} else if (consume(TK_FOR)) {
+		node = new_node(ND_FOR, NULL, NULL);
+
+		expect("(");
+
+		if (!consume_op(";")) {
+			node->init = expr();
+			expect(";");
+		}
+		if (!consume_op(";")) {
+			node->condition = expr();
+			expect(";");
+		}
+		if (!consume_op(")")) {
+			node->update = expr();
+			expect(")");
+		}
+
+		node->lhs = stmt();
+	} else if (consume_op("{")) {
+		node = new_node(ND_BLOCK, NULL, NULL);
+		if (consume_op("}"))
+			return (node);
+
+		Node *last_stmt = stmt();
+		node->next = last_stmt;
+
+		while (!consume_op("}")) {
+			last_stmt->next = stmt();
+			last_stmt = last_stmt->next;
+		}
+	} else if (!consume_op(";")) {
 		node = expr();
+		expect(";");
 	}
 
-	expect(";");
 	return node;
 }
 
@@ -287,6 +371,8 @@ Node *primary() {
 			lvar->len = tok->len;
 			if (locals)
 				lvar->offset = locals->offset + 8;
+			else
+				lvar->offset = 8;
 			node->offset = lvar->offset;
 			locals = lvar;
 		}

@@ -16,7 +16,7 @@ endif
 9cc: $(OBJS)
 		$(CC) -o 9cc $(OBJS) $(LDFLAGS) $(CFLAGS)
 
-$(OBJS): 9cc.h asm.h
+$(OBJS): 9cc.h
 
 test: 9cc
 		./test.sh
